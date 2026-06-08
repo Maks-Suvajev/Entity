@@ -6,16 +6,16 @@ EntityManager::EntityManager()
 {
 }
 
-void EntityManager::resizeSparse(Entity entity)
+void EntityManager::resizeSparse(Entity::Entity entity)
 {
     // Double the size of the sparse vector unless entityID is higher
     size_t newSize = std::max(static_cast<size_t>(entity + 1), static_cast<size_t>(sparse.size()) * 2);
 
-    sparse.resize(newSize, maxEntityValue);
+    sparse.resize(newSize, Entity::MaxEntityValue);
 }
 
 
-void EntityManager::printActiveEntityComponents(Entity entity)
+void EntityManager::printActiveEntityComponents(Entity::Entity entity)
 {
     uint32_t totalComponents = 0U;
 
@@ -35,24 +35,9 @@ void EntityManager::printActiveEntityComponents(Entity entity)
     std::cout << "------------------------------------------------" << std::endl;
 }
 
-void EntityManager::printActiveEntityIDs()
+Entity::Entity EntityManager::generateNewEntity()
 {
-    std::cout << "-------------------------------------------" << std::endl;
-    std::cout << "| Currently active entity IDs:            |" << std::endl;
-    std::cout << "-------------------------------------------" << std::endl;
-
-    for (auto& id : activeIDs)
-    {
-        std::cout << " " <<  id << " ";
-    }
-
-    std::cout << std::endl;
-    std::cout << "-------------------------------------------" << std::endl;
-}
-
-Entity EntityManager::generateNewEntity()
-{
-    Entity newID = getNewID();
+    Entity::Entity newID = getNewID();
 
     activeIDs.push_back(newID);
 
@@ -61,35 +46,35 @@ Entity EntityManager::generateNewEntity()
         resizeSparse(newID);
     }
 
-    sparse[newID] = static_cast<Entity>(activeIDs.size() - 1);
+    sparse[newID] = static_cast<Entity::Entity>(activeIDs.size() - 1);
 
     return newID;
 }
 
-Entity EntityManager::getNewID()
+Entity::Entity EntityManager::getNewID()
 {
     if (recyclingBucket.empty())
     {
         return nextID++;
     }
 
-    Entity newID = recyclingBucket.back();
+    Entity::Entity newID = recyclingBucket.back();
     recyclingBucket.pop_back();
 
     return newID;
 }
 
-void EntityManager::deleteEntity(Entity entity)
+void EntityManager::deleteEntity(Entity::Entity entity)
 {
-    Entity position = sparse[entity]; // get position
-    Entity backValue = activeIDs.back(); // get back value
+    Entity::Entity position = sparse[entity]; // get position
+    Entity::Entity backValue = activeIDs.back(); // get back value
 
     activeIDs[position] = backValue; // Move back data into position of deleted data
     sparse[backValue] = position;
 
     activeIDs.pop_back(); // remove from back ID
 
-    sparse[entity] = maxEntityValue;
+    sparse[entity] = Entity::MaxEntityValue;
 
     recyclingBucket.push_back(entity); 
 

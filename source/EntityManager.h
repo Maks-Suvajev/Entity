@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <typeindex>
 #include <typeinfo>
+#include <memory>
 
 #include "ComponentManager.h"
 
@@ -16,46 +17,47 @@ class EntityManager
 {
     public:
         EntityManager();
-        Entity getNewID();
-        void deleteEntity(Entity entity);
-        Entity generateNewEntity();
+        void deleteEntity(Entity::Entity entity);
+        Entity::Entity generateNewEntity();
 
         void printActiveEntityIDs();
-        void printActiveEntityComponents(Entity entity);
+        void printActiveEntityComponents(Entity::Entity entity);
 
         template<typename T>
-        bool addComponentData(Entity entity, T&& componentData);
+        bool addComponentData(Entity::Entity entity, T&& componentData);
 
         template<typename T>
-        T* getPoolElement(Entity entity);
+        T* getPoolElement(Entity::Entity entity);
 
         template<typename T>
         ComponentManager<T>* getComponentPool();
 
     private:
-        void resizeSparse(Entity entity);
+        Entity::Entity getNewID();
+        void resizeSparse(Entity::Entity entity);
+
         uint32_t nextID;
-        std::vector<Entity> recyclingBucket;
-        std::vector<Entity> activeIDs;
-        std::vector<Entity> sparse;
+        std::vector<Entity::Entity> recyclingBucket;
+        std::vector<Entity::Entity> activeIDs;
+        std::vector<Entity::Entity> sparse;
         std::unordered_map<std::type_index, std::unique_ptr<IComponentPool>> componentPools;
 };
 
 template<typename T>
-bool EntityManager::addComponentData(Entity entity, T&& componentData)
+bool EntityManager::addComponentData(Entity::Entity entity, T&& componentData)
 {
     auto index = std::type_index(typeid(T));
 
     if (!componentPools.contains(index))
     {
-        componentPools[index] = std::make_unique<ComponentManager<T>>();
+        componentPools[index] = std::make_unique<ComponentManager<T>>(); 
     }
 
     return static_cast<ComponentManager<T>*>(componentPools[index].get())->addComponent(entity, std::move(componentData));
 }
 
 template<typename T>
-T* EntityManager::getPoolElement(Entity entity)
+T* EntityManager::getPoolElement(Entity::Entity entity)
 {
     auto pool = getComponentPool<T>();
 
@@ -84,6 +86,8 @@ template<typename T>
 ComponentManager<T>* EntityManager::getComponentPool()
 {
     auto index = std::type_index(typeid(T));
+
+    //TODO: Use find instead of contains, currently doing 2 hash lookups instead of just pulling an iterator once and checking if its at the end
 
     if (!componentPools.contains(index))
     {
