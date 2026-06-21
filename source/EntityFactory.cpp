@@ -1,10 +1,11 @@
 #include "EntityFactory.h"
 
 
-Entity::Entity EntityFactory::createRenderableEntity(const gfx::SceneNode& sceneNode)
-{
-    bool firstChildDone = false;
 
+
+
+std::pair<Entity::Entity, Entity::Entity> EntityFactory::createRenderableEntityRecurse(const gfx::SceneNode& sceneNode)
+{
     // Create new entityID
     Entity::Entity newEntity = m_entityManager->generateNewEntity();
 
@@ -14,45 +15,57 @@ Entity::Entity EntityFactory::createRenderableEntity(const gfx::SceneNode& scene
 
     m_entityManager->addComponentData<gfx::RenderNode>(newEntity, std::move(newRenderNode));
 
+
+    Entity::Entity prevEntity = Entity::NullEntity;
+    gfx::RenderHierarchy prevHierarchy{};
+    Entity::Entity ownFirstChild = Entity::NullEntity;
+
+    // Loop through children
+    for (const auto& sceneNode : sceneNode.children)
+    {
+        auto [childEntity, childsFirstChild] = createRenderableEntityRecurse(sceneNode); 
+
+        if (prevEntity == Entity::NullEntity)
+        {
+            ownFirstChild = childEntity;
+        }
+        else
+        {
+            prevHierarchy.nextSibling = childEntity;
+            m_entityManager->addComponentData<gfx::RenderHierarchy>(prevEntity, std::move(prevHierarchy));
+        }
+
+        prevHierarchy = gfx::RenderHierarchy{};
+        prevHierarchy.childEntity = childsFirstChild;
+        prevEntity = childEntity;
+
+    }
+
+    if (prevEntity != Entity::NullEntity)
+    {
+        m_entityManager->addComponentData<gfx::RenderHierarchy>(prevEntity, std::move(prevHierarchy));
+    }
+
+    return {newEntity, ownFirstChild};
+}
+
+Entity::Entity EntityFactory::createRenderableEntity(const gfx::SceneNode& rootSceneNode)
+{
+    gfx::RenderHierarchy rootHierarchy{};
+
+    auto [rootEntity, rootFirstChild] = createRenderableEntityRecurse(rootSceneNode);
+
+    rootHierarchy.childEntity = rootFirstChild;
+    
+    m_entityManager->addComponentData<gfx::RenderHierarchy>(rootEntity, std::move(rootHierarchy));
+
     // Create transform component
     gfx::Transform newTransform{.position = {0.0f, 0.0f, 0.0f},
                                 .rotation = {0.0f, 0.0f, 0.0f},
                                 .scaleFactors = {1.0f, 1.0f, 1.0f}};
 
-    m_entityManager->addComponentData<gfx::Transform>(newEntity, std::move(newTransform)); // Just put it at origin for testing
+    m_entityManager->addComponentData<gfx::Transform>(rootEntity, std::move(newTransform)); // Just put it at origin for testing
 
-    // Create component
-    Entity::Entity parentEntity = newEntity;
-    Entity::Entity childEntity;
-
-    gfx::RenderHierarchy childHierarchy = gfx::RenderHierarchy{};
-
-    // Loop through children
-    for (const auto& sceneNode : sceneNode.children)
-    {
-        if (!firstChildDone )
-        {
-            childEntity = createRenderableEntity(sceneNode);
- 
-            childHierarchy.childEntity = childEntity;
-
-            m_entityManager->addComponentData<gfx::RenderHierarchy>(parentEntity, std::move(childHierarchy));
-
-            firstChildDone = true;
-        }
-        else
-        {
-            parentEntity = childEntity; // Previous child is parent for the sibling
-
-            childEntity = createRenderableEntity(sceneNode);
-
-            childHierarchy.nextSibling = childEntity;
-
-            m_entityManager->addComponentData<gfx::RenderHierarchy>(parentEntity, std::move(childHierarchy));
-        }
-
-        childHierarchy = gfx::RenderHierarchy{};
-    }
-
-    return newEntity;
+    return rootEntity;
 }
+

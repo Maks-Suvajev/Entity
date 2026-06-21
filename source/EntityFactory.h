@@ -18,8 +18,8 @@ class EntityFactory
         {
         };
 
+        std::pair<Entity::Entity, Entity::Entity> createRenderableEntityRecurse(const gfx::SceneNode& sceneNode);
         Entity::Entity createRenderableEntity(const gfx::SceneNode& sceneNode);
-
 
         
     private:
