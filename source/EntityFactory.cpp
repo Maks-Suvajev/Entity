@@ -1,9 +1,5 @@
 #include "EntityFactory.h"
 
-
-
-
-
 std::pair<Entity::Entity, Entity::Entity> EntityFactory::createRenderableEntityRecurse(const gfx::SceneNode& sceneNode)
 {
     // Create new entityID
@@ -12,8 +8,11 @@ std::pair<Entity::Entity, Entity::Entity> EntityFactory::createRenderableEntityR
     // Create mesh component
     gfx::RenderNode newRenderNode{.mesh = sceneNode.renderAssets.mesh, 
                                     .relativeTransform = sceneNode.relativeTransform};
-
     m_entityManager->addComponentData<gfx::RenderNode>(newEntity, std::move(newRenderNode));
+
+    // Create material component
+    gfx::Material nodeMaterial = m_materialManager->getElement(sceneNode.renderAssets.materialKey);
+    m_entityManager->addComponentData<gfx::Material>(newEntity, std::move(nodeMaterial));
 
 
     Entity::Entity prevEntity = Entity::NullEntity;

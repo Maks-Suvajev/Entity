@@ -69,9 +69,12 @@ void EntityManager::deleteEntity(Entity::Entity entity)
     Entity::Entity position = sparse[entity]; // get position
     Entity::Entity backValue = activeIDs.back(); // get back value
 
-    activeIDs[position] = backValue; // Move back data into position of deleted data
-    sparse[backValue] = position;
-
+    if (entity != backValue)
+    {
+        activeIDs[position] = backValue; // Move back data into position of deleted data
+        sparse[backValue] = position;
+    }
+    
     activeIDs.pop_back(); // remove from back ID
 
     sparse[entity] = Entity::MaxEntityValue;

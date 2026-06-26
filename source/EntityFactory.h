@@ -3,9 +3,10 @@
 
 #include "EntityManager.h"
 #include "MaterialManager.h"
+
 #include "SceneModelTypes.h"
 #include "PhysicsTypes.h"
-
+#include "MaterialTypes.h"
 
 
 class EntityFactory

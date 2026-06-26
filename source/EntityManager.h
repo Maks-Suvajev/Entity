@@ -32,6 +32,59 @@ class EntityManager
         template<typename T>
         ComponentManager<T>* getComponentPool();
 
+        size_t numActiveIDs()
+        {
+            return activeIDs.size();
+        }
+
+        std::vector<Entity::Entity> getActiveEntityIDs()
+        {
+            return activeIDs;
+        }
+
+        size_t componentsSize()
+        {
+            size_t totalComponents = 0;
+
+            for (auto& [type, pool] : componentPools)
+            {
+                totalComponents += pool->size();
+            }
+
+            return totalComponents;
+        }
+
+        std::vector<std::type_index> getEntityComponentTypes(Entity::Entity entity)
+        {
+            std::vector<std::type_index> componentTypes;
+
+            for (auto& [type, pool] : componentPools)
+            {
+                if (pool->hasEntity(entity))
+                {
+                    componentTypes.push_back(type);
+                }
+            }
+
+            return componentTypes;
+        }
+
+        int getEntityComponentCount(Entity::Entity entity)
+        {
+            int totalCount = 0;
+
+            for (auto& [type, pool] : componentPools)
+            {
+                if (pool->hasEntity(entity))
+                {
+                    ++totalCount;
+                }
+            }
+
+            return totalCount;
+        }
+
+
     private:
         Entity::Entity getNewID();
         void resizeSparse(Entity::Entity entity);
