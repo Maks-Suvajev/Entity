@@ -20,9 +20,9 @@ std::pair<Entity::Entity, Entity::Entity> EntityFactory::createRenderableEntityR
     Entity::Entity ownFirstChild = Entity::NullEntity;
 
     // Loop through children
-    for (const auto& sceneNode : sceneNode.children)
+    for (const auto& childNode : sceneNode.children)
     {
-        auto [childEntity, childsFirstChild] = createRenderableEntityRecurse(sceneNode); 
+        auto [childEntity, childsFirstChild] = createRenderableEntityRecurse(childNode); 
 
         if (prevEntity == Entity::NullEntity)
         {
