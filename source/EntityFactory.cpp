@@ -1,70 +1,52 @@
 #include "EntityFactory.h"
 
-std::pair<Entity::Entity, Entity::Entity> EntityFactory::createRenderableEntityRecurse(const gfx::SceneNode& sceneNode)
+Entity::Entity EntityFactory::createRenderableEntityRecurse(const gfx::SceneNode& sceneNode, size_t parentIndex, bool hasParent)
 {
     // Create new entityID
     Entity::Entity newEntity = m_entityManager->generateNewEntity();
 
-    // Create mesh component
-    gfx::RenderNode newRenderNode{.mesh = sceneNode.renderAssets.mesh, 
-                                    .relativeTransform = sceneNode.relativeTransform};
-    m_entityManager->addComponentData<gfx::RenderNode>(newEntity, std::move(newRenderNode));
+    auto hierarchyPool = m_entityManager->getComponentPool<gfx::RenderHierarchy>();
 
-    // Create material component
-    gfx::Material nodeMaterial = m_materialManager->getElement(sceneNode.renderAssets.materialKey);
-    m_entityManager->addComponentData<gfx::Material>(newEntity, std::move(nodeMaterial));
+    size_t currentIndex = 0;
 
+    if (hierarchyPool != nullptr)
+    {
+        currentIndex = hierarchyPool->size();
+    }
 
-    Entity::Entity prevEntity = Entity::NullEntity;
-    gfx::RenderHierarchy prevHierarchy{};
-    Entity::Entity ownFirstChild = Entity::NullEntity;
+    m_entityManager->addComponentData<gfx::RenderHierarchy>(newEntity, gfx::RenderHierarchy{
+        .parentIndex = parentIndex,
+        .hasParent = hasParent
+    });
 
-    // Loop through children
+    gfx::Transform transform = gfx::convertToTransform(sceneNode.transform);
+
+    m_entityManager->addComponentData<gfx::Transform>(newEntity, std::move(transform));
+
+    if (sceneNode.renderAssets.mesh.VAO != gfx::invalidHandler)
+    {
+        gfx::GpuHandles mesh = sceneNode.renderAssets.mesh; // Copy for hot loop
+
+        m_entityManager->addComponentData<gfx::GpuHandles>(newEntity, std::move(mesh));
+    }
+
+    if (!sceneNode.renderAssets.materialKey.empty())
+    {
+        // Create material component
+        gfx::Material nodeMaterial = m_materialManager->getElement(sceneNode.renderAssets.materialKey);
+        m_entityManager->addComponentData<gfx::Material>(newEntity, std::move(nodeMaterial));
+    }
+
     for (const auto& childNode : sceneNode.children)
     {
-        auto [childEntity, childsFirstChild] = createRenderableEntityRecurse(childNode); 
-
-        if (prevEntity == Entity::NullEntity)
-        {
-            ownFirstChild = childEntity;
-        }
-        else
-        {
-            prevHierarchy.nextSibling = childEntity;
-            m_entityManager->addComponentData<gfx::RenderHierarchy>(prevEntity, std::move(prevHierarchy));
-        }
-
-        prevHierarchy = gfx::RenderHierarchy{};
-        prevHierarchy.childEntity = childsFirstChild;
-        prevEntity = childEntity;
-
+        createRenderableEntityRecurse(childNode, currentIndex, true);
     }
 
-    if (prevEntity != Entity::NullEntity)
-    {
-        m_entityManager->addComponentData<gfx::RenderHierarchy>(prevEntity, std::move(prevHierarchy));
-    }
-
-    return {newEntity, ownFirstChild};
+    return newEntity;
 }
 
 Entity::Entity EntityFactory::createRenderableEntity(const gfx::SceneNode& rootSceneNode)
 {
-    gfx::RenderHierarchy rootHierarchy{};
-
-    auto [rootEntity, rootFirstChild] = createRenderableEntityRecurse(rootSceneNode);
-
-    rootHierarchy.childEntity = rootFirstChild;
-    
-    m_entityManager->addComponentData<gfx::RenderHierarchy>(rootEntity, std::move(rootHierarchy));
-
-    // Create transform component
-    gfx::Transform newTransform{.position = {0.0f, 0.0f, 0.0f},
-                                .rotation = {0.0f, 0.0f, 0.0f},
-                                .scaleFactors = {1.0f, 1.0f, 1.0f}};
-
-    m_entityManager->addComponentData<gfx::Transform>(rootEntity, std::move(newTransform)); // Just put it at origin for testing
-
-    return rootEntity;
+    return createRenderableEntityRecurse(rootSceneNode, 0, false);
 }
 

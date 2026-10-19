@@ -119,6 +119,8 @@ T* EntityManager::getPoolElement(Entity::Entity entity)
         #ifdef ENABLE_DEBUG_MESSAGES
             std::cout << "ERROR::RenderSystem::getPoolElement::No pool for type found: " << typeid(T).name() << std::endl;
         #endif
+
+        return nullptr;
     }
 
     auto component = pool->getComponentData(entity);

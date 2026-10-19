@@ -19,14 +19,12 @@ class EntityFactory
         {
         };
 
-        std::pair<Entity::Entity, Entity::Entity> createRenderableEntityRecurse(const gfx::SceneNode& sceneNode);
-        Entity::Entity createRenderableEntity(const gfx::SceneNode& sceneNode);
+        Entity::Entity createRenderableEntity(const gfx::SceneNode& rootSceneNode);
+        Entity::Entity createRenderableEntityRecurse(const gfx::SceneNode& sceneNode, size_t parentIndex, bool hasParent);
 
-        
     private:
         EntityManager* m_entityManager;
         gfx::MaterialManager* m_materialManager;
-
 
 };
 
